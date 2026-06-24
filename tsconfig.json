@@ -8,9 +8,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "ngx-drag-drop-kit": [
-        "./dist/ngx-drag-drop-kit"
-      ]
+      "ngx-drag-drop-kit": ["./dist/ngx-drag-drop-kit"]
     },
     "skipLibCheck": true,
     "isolatedModules": true,
@@ -31,6 +29,12 @@
     },
     {
       "path": "./projects/ngx-drag-drop-kit/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.app.json"
+    },
+    {
+      "path": "./projects/demo/tsconfig.spec.json"
     }
   ]
 }

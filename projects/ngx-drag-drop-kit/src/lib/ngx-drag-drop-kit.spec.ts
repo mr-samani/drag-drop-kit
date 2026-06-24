@@ -8,9 +8,8 @@ describe('NgxDragDropKit', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NgxDragDropKit]
-    })
-    .compileComponents();
+      imports: [NgxDragDropKit],
+    }).compileComponents();
 
     fixture = TestBed.createComponent(NgxDragDropKit);
     component = fixture.componentInstance;
