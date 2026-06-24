@@ -10,8 +10,8 @@ import {
   Renderer2,
   RendererStyleFlags2,
 } from '@angular/core';
-import { NgxDragRef } from '../ngx-drag-ref';
-import { NGX_DRAGGABLE } from '../tokens/ngx-draggable.token';
+import { DragRef } from '../drag-ref';
+import { NGX_DRAGGABLE } from '../tokens/draggable.token';
 import { IPosition } from '../contracts/iposition';
 import { fromEvent, Subscription } from 'rxjs';
 import { OnInit } from '@angular/core';
@@ -19,19 +19,20 @@ import { checkBoundX, checkBoundY } from '../utils/check-boundary';
 import { getPointerPositionOnViewPort, getPointerPosition } from '../utils/get-position';
 import { getXYfromTransform } from '../utils/get-transform';
 import { ElementHelper } from '../utils/element.helper';
+import { NGX_DROPLIST } from '../tokens/drop-list.token';
 @Directive({
   selector: '[NgxDraggable]',
   providers: [
     {
       provide: NGX_DRAGGABLE,
-      useExisting: NgxDraggableDirective,
+      useExisting: NgxDraggable,
     },
   ],
   host: {
     '[style.touch-action]': '"none"', // CRITICAL: Always disable touch actions
   },
 })
-export class NgxDraggableDirective<T = any> extends NgxDragRef implements OnInit, OnDestroy {
+export class NgxDraggable<T = any> extends DragRef<T> implements OnInit, OnDestroy {
   private _boundary?: HTMLElement;
   private boundaryDomRect?: DOMRect;
   @Input() set boundary(value: HTMLElement | undefined) {
@@ -48,6 +49,10 @@ export class NgxDraggableDirective<T = any> extends NgxDragRef implements OnInit
   @Output() dragStart = new EventEmitter<IPosition>();
   @Output() dragMove = new EventEmitter<IPosition>();
   @Output() dragEnd = new EventEmitter<IPosition>();
+
+  @Input('data') set setData(d: T) {
+    this.data = d;
+  }
 
   private previousTransitionProprety?: string;
   set dragging(val: boolean) {
@@ -103,6 +108,8 @@ export class NgxDraggableDirective<T = any> extends NgxDragRef implements OnInit
     this.findDragRootElement();
     // this.isFullRow = isFullRowElement(this.el);
     this.init();
+
+    console.log(this.dropListContainer);
   }
 
   ngOnDestroy() {

@@ -1,15 +1,15 @@
-import { NgxDraggable } from './ngx-draggable.directive';
-import { DOCUMENT, ElementRef, inject } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { ElementRef, DOCUMENT, inject } from '@angular/core';
+import { NgxDropList } from './ngx-drop-list.directive';
 
-describe('NgxDraggable', () => {
+describe('NgxDropList', () => {
   let el: ElementRef<HTMLDivElement>;
   beforeEach(() => {
     let doc = inject<Document>(DOCUMENT);
     el = new ElementRef<HTMLDivElement>(doc.createElement('div'));
   });
+
   it('should create an instance', () => {
-    const directive = new NgxDraggable(el);
+    const directive = new NgxDropList(el);
     expect(directive).toBeTruthy();
   });
 });

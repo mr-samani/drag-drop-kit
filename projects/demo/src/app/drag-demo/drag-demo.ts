@@ -1,9 +1,13 @@
-import { Component } from '@angular/core';
-import { NgxDraggableDirective } from 'ngx-drag-drop-kit';
+import { Component, signal } from '@angular/core';
+import { NgxDraggable, NgxDropList } from 'ngx-drag-drop-kit';
 @Component({
   selector: 'app-drag-demo',
-  imports: [NgxDraggableDirective],
+  imports: [NgxDraggable, NgxDropList],
   templateUrl: './drag-demo.html',
   styleUrl: './drag-demo.scss',
 })
-export class DragDemo {}
+export class DragDemo {
+  items = signal<string[]>(['a', 'b', 'c', 'd', 'e']);
+  progress = signal<string[]>(['f']);
+  done = signal<string[]>([]);
+}

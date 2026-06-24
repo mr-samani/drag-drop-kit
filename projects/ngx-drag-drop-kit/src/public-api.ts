@@ -3,3 +3,4 @@
  */
 
 export * from './ngx-draggable/directives/ngx-draggable.directive';
+export * from './ngx-draggable/directives/ngx-drop-list.directive';

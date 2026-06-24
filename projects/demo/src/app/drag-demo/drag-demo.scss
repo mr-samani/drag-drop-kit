@@ -1,7 +1,31 @@
 .card {
-  width: 120px;
-  height: 80px;
+  width: 100%;
+  min-height: 50px;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
   border-radius: 4px;
-  background-color: #8e9198;
+  background-color: #ffffff;
+}
+
+.kanban {
+  display: flex;
+  gap: 10px;
+  .list {
+    border: 1px gray solid;
+    flex: auto;
+    &.todo {
+      &.card {
+        background-color: rgb(232, 232, 232);
+      }
+    }
+    &.progress {
+      &.card {
+        background-color: rgb(113, 205, 255);
+      }
+    }
+    &.done {
+      &.card {
+        background-color: rgb(151, 252, 161);
+      }
+    }
+  }
 }

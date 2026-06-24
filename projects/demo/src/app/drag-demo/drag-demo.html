@@ -1,1 +1,17 @@
-<div class="card" NgxDraggable></div>
+<div class="kanban">
+  <div class="list todo" NgxDropList [data]="items()">
+    @for (item of items(); track $index) {
+      <div class="card" NgxDraggable [data]="item"></div>
+    }
+  </div>
+  <div class="list progress" NgxDropList [data]="items()">
+    @for (item of progress(); track $index) {
+      <div class="card" NgxDraggable [data]="item"></div>
+    }
+  </div>
+  <div class="list done" NgxDropList [data]="items()">
+    @for (item of done(); track $index) {
+      <div class="card" NgxDraggable [data]="item"></div>
+    }
+  </div>
+</div>
