@@ -123,8 +123,8 @@ export function clampWithinBoundary(
   // Calculate new viewport position
   const newViewportLeft = currentRect.left + leftDelta;
   const newViewportTop = currentRect.top + topDelta;
-  const newViewportRight = newViewportLeft + newWidth;
-  const newViewportBottom = newViewportTop + newHeight;
+  // const newViewportRight = newViewportLeft + newWidth;
+  //const newViewportBottom = newViewportTop + newHeight;
 
   let clampedWidth = newWidth;
   let clampedHeight = newHeight;

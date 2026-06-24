@@ -1,6 +1,5 @@
-import { AfterViewInit, Directive, ElementRef, inject, InjectionToken, OnInit } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, InjectionToken, OnDestroy } from '@angular/core';
 import { DropListGroupRef } from '../drop-list-group-ref';
-import { DragRegister } from '../drad-drop';
 
 export const NGX_DROPLIST_GROUP = new InjectionToken<DropListGroupRef>('ngx-drop-list-group');
 
@@ -8,13 +7,14 @@ export const NGX_DROPLIST_GROUP = new InjectionToken<DropListGroupRef>('ngx-drop
   selector: '[NgxDropListGroup]',
   providers: [{ provide: NGX_DROPLIST_GROUP, useExisting: NgxDropListGroup }],
 })
-export class NgxDropListGroup extends DropListGroupRef implements AfterViewInit {
-  private readonly dragRegister = inject(DragRegister);
+export class NgxDropListGroup implements AfterViewInit, OnDestroy {
+  _ref = new DropListGroupRef();
   constructor(elRef: ElementRef) {
-    super();
-    this.el = elRef.nativeElement;
+    this._ref.el = elRef.nativeElement;
   }
 
-  ngAfterViewInit(): void {
+  ngAfterViewInit(): void {}
+  ngOnDestroy(): void {
+    this._ref.clear();
   }
 }

@@ -15,12 +15,9 @@ import { DragRef } from '../drag-ref';
 import { IPosition } from '../contracts/iposition';
 import { fromEvent, Subscription } from 'rxjs';
 import { OnInit } from '@angular/core';
-import { checkBoundX, checkBoundY } from '../utils/check-boundary';
-import { getPointerOnViewPort, getPointerPosition } from '../utils/get-position';
-import { getXYfromTransform } from '../utils/get-transform';
-import { ElementHelper } from '../utils/element.helper';
-import { DragRegister } from '../drad-drop';
+import { getPointerOnViewPort } from '../utils/get-position';
 import { NGX_DROPLIST } from './ngx-drop-list.directive';
+import { NGX_DROPLIST_GROUP } from './ngx-drop-list-group.directive';
 
 export const NGX_DRAGGABLE = new InjectionToken<DragRef>('ngx-draggable');
 
@@ -58,7 +55,7 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
   private previousTransitionProprety?: string;
   set dragging(val: boolean) {
     this._ref.isDragging = val == true;
-    console.log(this._ref);
+
     if (this._ref.isDragging) {
       this.previousTransitionProprety = this._ref.el.style.transitionProperty;
       this.renderer.setStyle(this._ref.el, 'transition-property', 'none', RendererStyleFlags2.Important);
@@ -90,19 +87,20 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     return this._ref.isDragging;
   }
 
-  private isFixedPosition = false;
   private pointerDown = false;
   private startSubscriptions: Subscription[] = [];
   private subscriptions: Subscription[] = [];
 
   private readonly renderer = inject(Renderer2);
-  private _ref = new DragRef(this.renderer);
+  private _ref = new DragRef();
   private readonly doc = inject(DOCUMENT);
-  private readonly dragRegister = inject(DragRegister);
+
   private dropListContainer = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
+  private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
 
   constructor(private elRef: ElementRef<HTMLElement>) {
     this._ref.dropList = this.dropListContainer;
+    this._ref.dropListGroup = this.dropListGroup;
   }
 
   ngOnInit(): void {
@@ -114,14 +112,14 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     this.initDragHandler();
     // this.isFullRow = isFullRowElement(this._ref.el);
     this._ref.init();
-    this.dragRegister.registerDragItem(this._ref);
+    this.dropListGroup?.registerDragItem?.(this._ref);
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.startSubscriptions.forEach(sub => sub.unsubscribe());
     // this.autoScroll.stop();
-    this.dragRegister.removeDragItem(this._ref);
+    this.dropListGroup?.removeDragItem(this._ref);
   }
 
   initDragHandler() {
@@ -131,15 +129,15 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     ];
   }
 
-  onEndDrag(ev: PointerEvent) {
+  onEndDrag(_ev: PointerEvent) {
     if (this.dragging) {
       //  this.dragService.stopDrag(this);
       this.dragEnd.emit({ x: this._ref.x, y: this._ref.y });
     }
     this.dragging = false;
-    // this.autoScroll.stop();
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.pointerDown = false;
+    this._ref.endDrag();
   }
 
   onPointerDown(ev: PointerEvent) {
@@ -148,8 +146,6 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     ev.preventDefault();
     // stopPropagation required for nested tree elements
     ev.stopPropagation();
-    const styles = getComputedStyle(this._ref.el);
-    this.isFixedPosition = styles.position === 'fixed';
 
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.subscriptions = [
@@ -168,8 +164,8 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
       const p = getPointerOnViewPort(ev);
       this._ref.startDrag(p);
       this.dragStart.emit(p);
+      this.dragging = true;
     }
-    this.dragging = true;
 
     let p = getPointerOnViewPort(ev);
     this._ref.dragMove(p);

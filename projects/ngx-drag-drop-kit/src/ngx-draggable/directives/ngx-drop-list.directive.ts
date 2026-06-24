@@ -1,6 +1,6 @@
-import { Directive, ElementRef, inject, InjectionToken, Input, input, OnDestroy, OnInit } from '@angular/core';
+import { Directive, ElementRef, inject, InjectionToken, Input, OnDestroy, OnInit } from '@angular/core';
 import { DropListRef } from '../drop-list-ref';
-import { DragRegister } from '../drad-drop';
+import { NGX_DROPLIST_GROUP } from './ngx-drop-list-group.directive';
 
 export const NGX_DROPLIST = new InjectionToken<DropListRef>('ngx-drop-list');
 
@@ -18,16 +18,16 @@ export class NgxDropList<T = any> implements OnInit, OnDestroy {
   @Input('data') set setData(val: T) {
     this._ref.data = val;
   }
-
-  private readonly dragRegister = inject(DragRegister);
+  private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
 
   constructor(elRef: ElementRef) {
     this._ref.el = elRef.nativeElement;
+    this._ref.dropListGroup = this.dropListGroup;
   }
   ngOnInit(): void {
-    this.dragRegister.registerDropList(this._ref);
+    this.dropListGroup?.registerDropList?.(this._ref);
   }
   ngOnDestroy(): void {
-    this.dragRegister.removeDropList(this._ref);
+    this.dropListGroup?.removeDropList?.(this._ref);
   }
 }
