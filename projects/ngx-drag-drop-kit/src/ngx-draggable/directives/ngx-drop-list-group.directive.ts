@@ -16,6 +16,5 @@ export class NgxDropListGroup extends DropListGroupRef implements AfterViewInit 
   }
 
   ngAfterViewInit(): void {
-    console.log(this.dragRegister.dragItemMap);
   }
 }

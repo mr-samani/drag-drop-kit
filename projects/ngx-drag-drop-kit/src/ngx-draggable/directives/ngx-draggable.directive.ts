@@ -16,7 +16,7 @@ import { IPosition } from '../contracts/iposition';
 import { fromEvent, Subscription } from 'rxjs';
 import { OnInit } from '@angular/core';
 import { checkBoundX, checkBoundY } from '../utils/check-boundary';
-import { getPointerPositionOnViewPort, getPointerPosition } from '../utils/get-position';
+import { getPointerOnViewPort, getPointerPosition } from '../utils/get-position';
 import { getXYfromTransform } from '../utils/get-transform';
 import { ElementHelper } from '../utils/element.helper';
 import { DragRegister } from '../drad-drop';
@@ -37,14 +37,11 @@ export const NGX_DRAGGABLE = new InjectionToken<DragRef>('ngx-draggable');
   },
 })
 export class NgxDraggable<T = any> implements OnInit, OnDestroy {
-  private _boundary?: HTMLElement;
-  private boundaryDomRect?: DOMRect;
   @Input() set boundary(value: HTMLElement | undefined) {
-    this._boundary = value;
-    this.updateDomRect();
+    this._ref.boundary = value;
   }
   get boundary(): HTMLElement | undefined {
-    return this._boundary;
+    return this.boundary;
   }
 
   @Input() dragRootElement = '';
@@ -93,32 +90,30 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     return this._ref.isDragging;
   }
 
-  isTouched = false;
-  protected x: number = 0;
-  protected y: number = 0;
-  private previousXY: IPosition = { x: 0, y: 0 };
   private isFixedPosition = false;
+  private pointerDown = false;
   private startSubscriptions: Subscription[] = [];
   private subscriptions: Subscription[] = [];
 
-  private _domRect?: DOMRect;
-
-  private _ref = new DragRef();
   private readonly renderer = inject(Renderer2);
+  private _ref = new DragRef(this.renderer);
   private readonly doc = inject(DOCUMENT);
   private readonly dragRegister = inject(DragRegister);
   private dropListContainer = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
 
-  constructor(elRef: ElementRef) {
-    this._ref.el = elRef.nativeElement;
+  constructor(private elRef: ElementRef<HTMLElement>) {
     this._ref.dropList = this.dropListContainer;
   }
 
   ngOnInit(): void {
+    //todo : dragrootelement maybe incorrect
+    this._ref.el = this.dragRootElement
+      ? (this.elRef.nativeElement.closest(this.dragRootElement) ?? this.elRef.nativeElement)
+      : this.elRef.nativeElement;
+
     this.initDragHandler();
-    this.findDragRootElement();
     // this.isFullRow = isFullRowElement(this._ref.el);
-    this.init();
+    this._ref.init();
     this.dragRegister.registerDragItem(this._ref);
   }
 
@@ -127,29 +122,8 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     this.startSubscriptions.forEach(sub => sub.unsubscribe());
     // this.autoScroll.stop();
     this.dragRegister.removeDragItem(this._ref);
-    this._ref.el.classList.remove('ngx-draggable');
   }
-  findDragRootElement() {
-    if (this.dragRootElement) {
-      let parentRoot: HTMLElement | null = ElementHelper.findParentBySelector(this._ref.el, this.dragRootElement);
-      if (parentRoot) {
-        this._ref.el = parentRoot;
-      }
-    }
-    this._ref.el.classList.add('ngx-draggable');
-  }
-  init() {
-    const xy = getXYfromTransform(this._ref.el);
-    this.x = xy.x;
-    this.y = xy.y;
-    this.updateDomRect();
-  }
-  updateDomRect() {
-    this._domRect = this._ref.el.getBoundingClientRect();
-    if (this._boundary) {
-      this.boundaryDomRect = this._boundary.getBoundingClientRect();
-    }
-  }
+
   initDragHandler() {
     // if passive = true => browser won't allow preventDefault
     this.startSubscriptions = [
@@ -160,12 +134,12 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
   onEndDrag(ev: PointerEvent) {
     if (this.dragging) {
       //  this.dragService.stopDrag(this);
-      this.dragEnd.emit({ x: this.x, y: this.y });
+      this.dragEnd.emit({ x: this._ref.x, y: this._ref.y });
     }
     this.dragging = false;
-    this.isTouched = false;
     // this.autoScroll.stop();
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.pointerDown = false;
   }
 
   onPointerDown(ev: PointerEvent) {
@@ -177,78 +151,29 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     const styles = getComputedStyle(this._ref.el);
     this.isFixedPosition = styles.position === 'fixed';
 
-    // اگر fixed است از viewport position استفاده کن
-    this.previousXY = this.isFixedPosition ? getPointerPositionOnViewPort(ev) : getPointerPosition(ev);
-
-    this.isTouched = true;
-    this.init();
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.subscriptions = [
       fromEvent<PointerEvent>(this.doc, 'pointermove', { passive: false }).subscribe(ev => this.onPointerMove(ev)),
       fromEvent<PointerEvent>(window, 'pointerup', { passive: false }).subscribe(ev => this.onEndDrag(ev)),
       fromEvent<PointerEvent>(window, 'pointercancel', { passive: false }).subscribe(ev => this.onEndDrag(ev)),
     ];
+
+    this.pointerDown = true;
+    const p = getPointerOnViewPort(ev);
+    this._ref.pointerDown(p);
   }
 
   onPointerMove(ev: PointerEvent) {
-    let p = getPointerPositionOnViewPort(ev);
+    if (this.pointerDown && this._ref.isDragging == false) {
+      const p = getPointerOnViewPort(ev);
+      this._ref.startDrag(p);
+      this.dragStart.emit(p);
+    }
+    this.dragging = true;
+
+    let p = getPointerOnViewPort(ev);
+    this._ref.dragMove(p);
     // this.dragService.getPointerElement(p);
-
-    let position = getPointerPosition(ev);
-
-    if (this.isFixedPosition) {
-      position = getPointerPositionOnViewPort(ev);
-    }
-
-    const offsetX = position.x - this.previousXY.x;
-    const offsetY = position.y - this.previousXY.y;
-
-    //fixed for lag to start dragging
-    if (Math.abs(offsetY) < 1 && Math.abs(offsetX) < 1) {
-      return;
-    }
-
-    if (this.isTouched && !this.dragging) {
-      this.dragging = true;
-      //  this.dragService.startDrag(this);
-      this.dragStart.emit(this.previousXY);
-      // this.autoScroll.handleAutoScroll(ev);
-    }
-    if (!this.dragging) {
-      return;
-    }
-
-    console.log(
-      'move',
-      Array.from(this.dragRegister.dragItemMap.values()).map(m => m.isDragging)
-      // .map(x => {
-      //   return { data: x.data, d: x.isDragging };
-      // })
-    );
-    //if (this.dropList) {
-    //  this.dragService.dragMove(this, ev, offsetX, offsetY);
-    //} else {
-    this.updatePosition(offsetX, offsetY);
-    //}
-    this.dragMove.emit({ x: this.x, y: this.y });
-  }
-
-  updatePosition(offsetX: number, offsetY: number) {
-    const selfRect = this._ref.el.getBoundingClientRect();
-
-    const clampedOffsetX = checkBoundX(selfRect, this.boundaryDomRect, offsetX);
-    this.x += clampedOffsetX;
-
-    const clampedOffsetY = checkBoundY(selfRect, this.boundaryDomRect, offsetY);
-    this.y += clampedOffsetY;
-
-    this.previousXY = {
-      x: clampedOffsetX + this.previousXY.x,
-      y: clampedOffsetY + this.previousXY.y,
-    };
-
-    let transform = `translate3d(${this.x}px, ${this.y}px, 0)`;
-    this.renderer.setStyle(this._ref.el, 'transform', transform);
-    return transform;
+    this.dragMove.emit({ x: this._ref.x, y: this._ref.y });
   }
 }

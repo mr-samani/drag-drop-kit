@@ -42,7 +42,7 @@ export function getPointerPosition(evt: MouseEvent | TouchEvent | PointerEvent):
     };
   }
 }
-export function getPointerPositionOnViewPort(evt: MouseEvent | TouchEvent | PointerEvent): IPosition {
+export function getPointerOnViewPort(evt: MouseEvent | TouchEvent | PointerEvent): IPosition {
   if (evt instanceof MouseEvent || evt instanceof PointerEvent) {
     return {
       x: evt.clientX,

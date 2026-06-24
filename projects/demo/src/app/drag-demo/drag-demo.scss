@@ -9,6 +9,8 @@
 .kanban {
   display: flex;
   gap: 10px;
+  max-width: 1200px;
+  margin: 10px auto;
   .list {
     border: 1px gray solid;
     flex: auto;
