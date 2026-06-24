@@ -1,8 +1,8 @@
 import { Component, signal } from '@angular/core';
-import { NgxDraggable, NgxDropList } from 'ngx-drag-drop-kit';
+import { NgxDraggable, NgxDropList, NgxDropListGroup } from 'ngx-drag-drop-kit';
 @Component({
   selector: 'app-drag-demo',
-  imports: [NgxDraggable, NgxDropList],
+  imports: [NgxDraggable, NgxDropList, NgxDropListGroup],
   templateUrl: './drag-demo.html',
   styleUrl: './drag-demo.scss',
 })

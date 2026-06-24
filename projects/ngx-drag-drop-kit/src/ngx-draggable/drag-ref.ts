@@ -1,10 +1,8 @@
-import { inject } from '@angular/core';
-import { NGX_DROPLIST } from './tokens/drop-list.token';
+import { DropListRef } from './drop-list-ref';
 
 export class DragRef<T = any> {
   data?: T;
-  _domRect?: DOMRect;
   el!: HTMLElement;
   isDragging: boolean = false;
-  dropListContainer = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
+  dropList?: DropListRef | null;
 }

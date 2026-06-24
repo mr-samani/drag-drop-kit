@@ -1,6 +1,7 @@
-import { Directive, ElementRef, inject, Input, input, OnDestroy, OnInit } from '@angular/core';
+import { Directive, ElementRef, inject, InjectionToken, Input, input, OnDestroy, OnInit } from '@angular/core';
 import { DropListRef } from '../drop-list-ref';
-import { NGX_DROPLIST } from '../tokens/drop-list.token';
+
+export const NGX_DROPLIST = new InjectionToken<DropListRef>('ngx-drop-list');
 
 @Directive({
   selector: '[NgxDropList]',
