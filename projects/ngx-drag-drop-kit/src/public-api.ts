@@ -5,3 +5,4 @@
 export * from './ngx-draggable/directives/ngx-drop-list-group.directive';
 export * from './ngx-draggable/directives/ngx-drop-list.directive';
 export * from './ngx-draggable/directives/ngx-draggable.directive';
+export * from './ngx-draggable/directives/ngx-place-holder.directive';

@@ -1,5 +1,6 @@
 <div class="kanban" NgxDropListGroup>
   <div class="list todo" NgxDropList [data]="items()">
+    <div class="plc" *NgxPlaceholder></div>
     @for (item of items(); track $index) {
       <div class="card" NgxDraggable [data]="item">{{item}}</div>
     }

@@ -1,8 +1,9 @@
 import { Directive, ElementRef, inject, InjectionToken, Input, OnDestroy, OnInit } from '@angular/core';
 import { DropListRef } from '../drop-list-ref';
 import { NGX_DROPLIST_GROUP } from './ngx-drop-list-group.directive';
+import { DragDropService } from '../services/drag-drop.service';
 
-export const NGX_DROPLIST = new InjectionToken<DropListRef>('ngx-drop-list');
+export const NGX_DROPLIST = new InjectionToken<NgxDropList>('ngx-drop-list');
 
 @Directive({
   selector: '[NgxDropList]',
@@ -18,16 +19,28 @@ export class NgxDropList<T = any> implements OnInit, OnDestroy {
   @Input('data') set setData(val: T) {
     this._ref.data = val;
   }
-  private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
+  @Input('connectedTo') set connections(list: HTMLElement[]) {
+    if (Array.isArray(list)) {
+      this._ref.connectedTo = list;
+    } else {
+      console.warn('NgxDropList', '"connectedTo" must be array!');
+      this._ref.connectedTo = [];
+    }
+  }
+  @Input('disableSort') set setDisableSort(val: boolean) {
+    this._ref.disableSort = val == true;
+  }
 
+  private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
+  private dragDropService = inject(DragDropService);
   constructor(elRef: ElementRef) {
     this._ref.el = elRef.nativeElement;
     this._ref.dropListGroup = this.dropListGroup;
   }
   ngOnInit(): void {
-    this.dropListGroup?.registerDropList?.(this._ref);
+    this.dragDropService.registerDropList(this._ref);
   }
   ngOnDestroy(): void {
-    this.dropListGroup?.removeDropList?.(this._ref);
+    this.dragDropService.removeDropList(this._ref);
   }
 }

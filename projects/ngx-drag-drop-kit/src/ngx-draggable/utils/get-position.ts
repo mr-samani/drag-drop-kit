@@ -1,4 +1,4 @@
-import { IPosition } from "../contracts/iposition";
+import { IPosition } from "../contracts/IPosition";
 
  
 export function getOffsetPosition(evt: MouseEvent | TouchEvent | PointerEvent, parent?: HTMLElement) {

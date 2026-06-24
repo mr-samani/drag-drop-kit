@@ -12,11 +12,12 @@ import {
   RendererStyleFlags2,
 } from '@angular/core';
 import { DragRef } from '../drag-ref';
-import { IPosition } from '../contracts/iposition';
+import { IPosition } from '../contracts/IPosition';
 import { fromEvent, Subscription } from 'rxjs';
 import { OnInit } from '@angular/core';
 import { getPointerOnViewPort } from '../utils/get-position';
 import { NGX_DROPLIST } from './ngx-drop-list.directive';
+import { DragDropService } from '../services/drag-drop.service';
 import { NGX_DROPLIST_GROUP } from './ngx-drop-list-group.directive';
 
 export const NGX_DRAGGABLE = new InjectionToken<DragRef>('ngx-draggable');
@@ -97,14 +98,13 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
 
   private dropListContainer = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
   private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
+  private dragDropService = inject(DragDropService);
 
   constructor(private elRef: ElementRef<HTMLElement>) {
-    this._ref.dropList = this.dropListContainer;
     this._ref.dropListGroup = this.dropListGroup;
   }
 
   ngOnInit(): void {
-    //todo : dragrootelement maybe incorrect
     this._ref.el = this.dragRootElement
       ? (this.elRef.nativeElement.closest(this.dragRootElement) ?? this.elRef.nativeElement)
       : this.elRef.nativeElement;
@@ -112,14 +112,16 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     this.initDragHandler();
     // this.isFullRow = isFullRowElement(this._ref.el);
     this._ref.init();
-    this.dropListGroup?.registerDragItem?.(this._ref);
+    this.dragDropService.registerDragItem(this._ref);
+    this._ref.withDropList(this.dropListContainer?._ref ?? null);
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.startSubscriptions.forEach(sub => sub.unsubscribe());
     // this.autoScroll.stop();
-    this.dropListGroup?.removeDragItem(this._ref);
+    this.dragDropService.removeDragItem(this._ref);
+    this._ref.dropList?.removeItem?.(this._ref);
   }
 
   initDragHandler() {
