@@ -8,7 +8,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "ngx-drag-drop-kit": ["./dist/ngx-drag-drop-kit"]
+      "ngx-drag-drop-kit": ["./projects/ngx-drag-drop-kit/src"]
     },
     "skipLibCheck": true,
     "isolatedModules": true,
