@@ -7,6 +7,14 @@ import { DropListGroupRef } from './drop-list-group-ref';
 import { IDropEvent } from './contracts/IDropEvent';
 import { cloneDragElementInBody } from './utils/clone-drag-element-in-body';
 import { DragDropService } from './services/drag-drop.service';
+// interface DragItemPosition {
+//   dragRef: DragRef;
+//   element: HTMLElement;
+//   clientRect: DOMRect;
+
+//   initialTransform: string;
+//   offset: number;
+// }
 
 export class DragRef<T = any> {
   data?: T;
@@ -27,6 +35,8 @@ export class DragRef<T = any> {
   private previousDragELDisplay = '';
 
   private _dropEvent: IDropEvent | null = null;
+  private _currentIndex = -1;
+  private _currentDropList?: DropListRef | null = null;
   private dragItemInBody?: HTMLElement;
   private renderer = inject(Renderer2);
   private doc = inject(DOCUMENT);
@@ -70,8 +80,7 @@ export class DragRef<T = any> {
   startDrag(_position: IPosition) {
     // this.autoScroll.handleAutoScroll(ev);
     if (this.dropListGroup && this.dropList) {
-      this.dropListGroup.currentDragItem = this;
-      this.dropListGroup.currentDropList = this.dropList;
+      this._currentDropList = this.dropList;
       this.dragDropService.updateAllRect();
       const index = this.dragDropService.getDragItemIndex(this);
       this._dropEvent = {
@@ -87,19 +96,32 @@ export class DragRef<T = any> {
       //hide main drag element
       this.previousDragELDisplay = this.el.style.display;
       this.renderer.setStyle(this.el, 'display', 'none', RendererStyleFlags2.Important);
-      this.dropList.enter();
+      this.dropList.enter(this);
     }
   }
   dragMove(position: IPosition) {
     const offsetX = position.x - this.previousX;
     const offsetY = position.y - this.previousY;
     this.updatePosition(this.dragItemInBody ?? this.el, offsetX, offsetY);
+
+    let list = this.dragDropService.getDropListFromPointerPosition(position);
+    if (this.dropListGroup && this._currentDropList != list) {
+      this._currentDropList?.exit();
+      this._currentDropList = list;
+      this._currentDropList?.enter(this);
+    }
+    if (this.dropListGroup) {
+      this._currentIndex = this.dragDropService.getIndexFromPointerPosition(this._currentDropList, position);
+      if (this._currentIndex == -1 && this._currentDropList) {
+        this._currentIndex = this._currentDropList._draggables.size;
+      }
+    }
   }
 
   endDrag() {
     // this.autoScroll.stop();
     if (this.dropList) {
-      this.dropList._placeHolderRef?.remove();
+      this.dragDropService.listSnapshot.forEach(x => x.item._placeHolderRef?.remove());
       this.el.style.display = this.previousDragELDisplay;
       this.dragItemInBody?.remove();
       this.previousX = 0;
@@ -107,7 +129,14 @@ export class DragRef<T = any> {
       this.x = 0;
       this.y = 0;
     }
-    console.log(this._dropEvent);
+
+    if (this._dropEvent && this._currentDropList) {
+      this._dropEvent.currentIndex = this._currentIndex;
+      this._dropEvent.container = this._currentDropList;
+      this._currentDropList.exit();
+      this._currentDropList.onDrop.emit(this._dropEvent);
+      console.log(this._dropEvent);
+    }
   }
 
   private updatePosition(el: HTMLElement, offsetX: number, offsetY: number) {

@@ -1,18 +1,18 @@
 <div class="kanban" NgxDropListGroup>
-  <div class="list todo" NgxDropList [data]="items()">
+  <div class="list todo" NgxDropList (drop)="drop($event)" [data]="items()">
     <div class="plc" *NgxPlaceholder></div>
     @for (item of items(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{item}}</div>
+      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
     }
   </div>
-  <div class="list progress" NgxDropList [data]="items()">
+  <div class="list progress" NgxDropList (drop)="drop($event)" [data]="items()">
     @for (item of progress(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{item}}</div>
+      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
     }
   </div>
-  <div class="list done" NgxDropList [data]="items()">
+  <div class="list done" NgxDropList (drop)="drop($event)" [data]="items()">
     @for (item of done(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{item}}</div>
+      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
     }
   </div>
 </div>

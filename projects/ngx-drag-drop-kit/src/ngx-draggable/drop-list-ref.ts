@@ -1,8 +1,9 @@
-import { DOCUMENT, inject } from '@angular/core';
+import { DOCUMENT, EventEmitter, inject } from '@angular/core';
 import { DragRef } from './drag-ref';
 import { DropListGroupRef } from './drop-list-group-ref';
-import { NGX_PLACEHOLDER } from '../public-api';
 import { PlaceHolderRef } from './placeholder-ref';
+import { NGX_PLACEHOLDER } from './directives/ngx-place-holder.directive';
+import { IDropEvent } from './contracts/IDropEvent';
 
 export class DropListRef<T = any> {
   data?: T;
@@ -12,11 +13,12 @@ export class DropListRef<T = any> {
   dropListGroup?: DropListGroupRef | null;
 
   _draggables = new Set<DragRef>();
+  _currentIndex = -1;
   domRect!: DOMRect;
 
   _placeHolderRef = inject(NGX_PLACEHOLDER, { optional: true });
   doc = inject(DOCUMENT);
-  private showPlaceholder = false;
+  onDrop = new EventEmitter<IDropEvent<T>>();
   updateDomRect() {
     this.domRect = this.el.getBoundingClientRect();
   }
@@ -38,17 +40,28 @@ export class DropListRef<T = any> {
     } else {
       this.el.appendChild(plc);
     }
-    this.showPlaceholder = true;
   }
 
-  enter() {
-    if (this.showPlaceholder) return;
-    this.showPlaceholder = true;
-    this.el.style.display = 'block';
+  enter(currentDragItem: DragRef, dragOverItem?: DragRef) {
+    if (!this._placeHolderRef || !this._placeHolderRef.el) {
+      this.createPlaceHolder(currentDragItem, dragOverItem);
+    }
+    this.el.style.outline = '1px red solid';
+    this._placeHolderRef!.el!.style.display = 'block';
+    this._currentIndex = -1;
+    let i = 0;
+    for (let item of this._draggables.values()) {
+      if (item.el == currentDragItem.el) {
+        this._currentIndex = i;
+        break;
+      }
+      i++;
+    }
   }
 
   exit() {
-    if (!this.showPlaceholder) return;
-    this.el.style.display = 'none';
+    this.el.style.outline = 'none';
+    if (!this._placeHolderRef || !this._placeHolderRef.el) return;
+    this._placeHolderRef.el.style.display = 'none';
   }
 }
