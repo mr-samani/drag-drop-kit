@@ -1,4 +1,4 @@
-import { DOCUMENT, inject, Renderer2 } from '@angular/core';
+import { DOCUMENT, inject, Renderer2, RendererStyleFlags2 } from '@angular/core';
 import { IPosition } from './contracts/IPosition';
 import { DropListRef } from './drop-list-ref';
 import { checkBoundX, checkBoundY } from './utils/check-boundary';
@@ -24,6 +24,7 @@ export class DragRef<T = any> {
   y: number = 0;
   private previousX: number = 0;
   private previousY: number = 0;
+  private previousDragELDisplay = '';
 
   private _dropEvent: IDropEvent | null = null;
   private dragItemInBody?: HTMLElement;
@@ -82,7 +83,10 @@ export class DragRef<T = any> {
       };
       this.dragItemInBody = cloneDragElementInBody(this.el, this.domRect);
       this.doc.body.appendChild(this.dragItemInBody);
-      this.dropList.createPlaceHolder(this);
+      this.dropList.createPlaceHolder(this, this);
+      //hide main drag element
+      this.previousDragELDisplay = this.el.style.display;
+      this.renderer.setStyle(this.el, 'display', 'none', RendererStyleFlags2.Important);
       this.dropList.enter();
     }
   }
@@ -94,6 +98,15 @@ export class DragRef<T = any> {
 
   endDrag() {
     // this.autoScroll.stop();
+    if (this.dropList) {
+      this.dropList._placeHolderRef?.remove();
+      this.el.style.display = this.previousDragELDisplay;
+      this.dragItemInBody?.remove();
+      this.previousX = 0;
+      this.previousY = 0;
+      this.x = 0;
+      this.y = 0;
+    }
     console.log(this._dropEvent);
   }
 

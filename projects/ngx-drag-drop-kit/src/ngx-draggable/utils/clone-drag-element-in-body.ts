@@ -7,8 +7,8 @@ export function cloneDragElementInBody(dragElement: HTMLElement, currDomRect: DO
   newEL.innerHTML = dragElement.innerHTML;
   newEL.className = dragElement.className + ' ngx-drag-in-body';
   newEL.style.position = 'absolute';
-  newEL.style.top = '0px';
-  newEL.style.left = '0px';
+  newEL.style.top = currDomRect.top + 'px';
+  newEL.style.left = currDomRect.left + 'px';
   newEL.style.width = currDomRect.width + 'px';
   newEL.style.height = currDomRect.height + 'px';
   newEL.style.pointerEvents = 'none';

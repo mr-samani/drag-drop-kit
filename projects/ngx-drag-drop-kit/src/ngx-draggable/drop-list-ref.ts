@@ -28,17 +28,15 @@ export class DropListRef<T = any> {
     this._draggables.delete(item);
   }
 
-  createPlaceHolder(dragOverItem: DragRef, isAfter = false) {
+  createPlaceHolder(currentDragItem: DragRef, dragOverItem?: DragRef, isAfter = false) {
     if (!this._placeHolderRef) {
       this._placeHolderRef = new PlaceHolderRef();
     }
+    const plc = this._placeHolderRef.getElement(currentDragItem);
     if (dragOverItem) {
-      dragOverItem.el.insertAdjacentElement(
-        isAfter ? 'afterend' : 'beforebegin',
-        this._placeHolderRef.getElement(this.doc)
-      );
+      dragOverItem.el.insertAdjacentElement(isAfter ? 'afterend' : 'beforebegin', plc);
     } else {
-      this.el.appendChild(this._placeHolderRef.getElement(this.doc));
+      this.el.appendChild(plc);
     }
     this.showPlaceholder = true;
   }
