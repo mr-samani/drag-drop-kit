@@ -1,18 +1,71 @@
-<div class="kanban" NgxDropListGroup>
-  <div class="list todo" NgxDropList (drop)="drop($event)" [data]="items()">
-    <div class="plc" *NgxPlaceholder></div>
-    @for (item of items(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
-    }
-  </div>
-  <div class="list progress" NgxDropList (drop)="drop($event)" [data]="items()">
-    @for (item of progress(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
-    }
-  </div>
-  <div class="list done" NgxDropList (drop)="drop($event)" [data]="items()">
-    @for (item of done(); track $index) {
-      <div class="card" NgxDraggable [data]="item">{{ item }}</div>
-    }
-  </div>
+<!-- ──────────────────────────────────────────────
+     Demo: Kanban (vertical lists) + Horizontal list + Flex-wrap grid
+     ────────────────────────────────────────────── -->
+
+<div class="demo-root">
+
+  <!-- ① Kanban – vertical lists connected to each other -->
+  <section class="section">
+    <h2>Kanban (vertical lists, cross-list)</h2>
+    <div class="kanban" NgxDropListGroup>
+      <div class="list list--todo" NgxDropList [data]="todo" (drop)="drop($event)">
+        <h3>To Do</h3>
+        <div class="plc" *NgxPlaceholder></div>
+        @for (item of todo; track item) {
+          <div class="card" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+
+      <div class="list list--prog" NgxDropList [data]="progress" (drop)="drop($event)">
+        <h3>In Progress</h3>
+        @for (item of progress; track item) {
+          <div class="card" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+
+      <div class="list list--done" NgxDropList [data]="done" (drop)="drop($event)">
+        <h3>Done</h3>
+        @for (item of done; track item) {
+          <div class="card" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ② Horizontal list -->
+  <section class="section">
+    <h2>Horizontal list (flex-row, LTR)</h2>
+    <div class="hlist" NgxDropListGroup>
+      <div class="hlist__inner" NgxDropList [data]="hItems" (drop)="drop($event)">
+        @for (item of hItems; track item) {
+          <div class="chip" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ RTL horizontal list -->
+  <section class="section" dir="rtl">
+    <h2>Horizontal list (RTL)</h2>
+    <div class="hlist" NgxDropListGroup>
+      <div class="hlist__inner" NgxDropList [data]="rtlItems" (drop)="drop($event)">
+        @for (item of rtlItems; track item) {
+          <div class="chip" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ④ Flex-wrap grid -->
+  <section class="section">
+    <h2>Flex-wrap grid (auto-detect row vs column)</h2>
+    <div NgxDropListGroup>
+      <div class="grid" NgxDropList [data]="gridItems" (drop)="drop($event)">
+        @for (item of gridItems; track item) {
+          <div class="grid__cell" NgxDraggable [data]="item">{{ item }}</div>
+        }
+      </div>
+    </div>
+  </section>
+
 </div>

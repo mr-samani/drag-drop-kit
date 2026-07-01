@@ -1,20 +1,18 @@
-import { copyEssentialStyles } from "./clone-style";
-
- 
-export function cloneDragElementInBody(dragElement: HTMLElement, currDomRect: DOMRect): HTMLElement {
-  let newEL = dragElement.cloneNode(true) as HTMLElement;
-  copyEssentialStyles(dragElement, newEL);
-  newEL.innerHTML = dragElement.innerHTML;
-  newEL.className = dragElement.className + ' ngx-drag-in-body';
-  newEL.style.position = 'absolute';
-  newEL.style.top = currDomRect.top + 'px';
-  newEL.style.left = currDomRect.left + 'px';
-  newEL.style.width = currDomRect.width + 'px';
-  newEL.style.height = currDomRect.height + 'px';
-  newEL.style.pointerEvents = 'none';
-  newEL.style.opacity = '0.85';
-  newEL.style.boxShadow = '0px 3px 20px rgba(0,0,0,.5)';
-  newEL.style.zIndex = '1000';
-  newEL.style.transitionProperty = 'none';
-  return newEL;
+export function cloneDragElementInBody(dragEl: HTMLElement, rect: DOMRect): HTMLElement {
+  const clone = dragEl.cloneNode(true) as HTMLElement;
+  clone.innerHTML = dragEl.innerHTML;
+  clone.className = dragEl.className + ' ngx-drag-in-body';
+  clone.style.position = 'fixed';
+  clone.style.top = rect.top + 'px';
+  clone.style.left = rect.left + 'px';
+  clone.style.width = rect.width + 'px';
+  clone.style.height = rect.height + 'px';
+  clone.style.margin = '0';
+  clone.style.pointerEvents = 'none';
+  clone.style.opacity = '0.85';
+  clone.style.boxShadow = '0 4px 24px rgba(0,0,0,.22)';
+  clone.style.zIndex = '99999';
+  clone.style.transitionProperty = 'none';
+  clone.style.transform = '';
+  return clone;
 }

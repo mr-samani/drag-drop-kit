@@ -7,6 +7,7 @@ import {
   InjectionToken,
   Input,
   OnDestroy,
+  OnInit,
   Output,
   Renderer2,
   RendererStyleFlags2,
@@ -14,7 +15,6 @@ import {
 import { DragRef } from '../drag-ref';
 import { IPosition } from '../contracts/IPosition';
 import { fromEvent, Subscription } from 'rxjs';
-import { OnInit } from '@angular/core';
 import { getPointerOnViewPort } from '../utils/get-position';
 import { NGX_DROPLIST } from './ngx-drop-list.directive';
 import { DragDropService } from '../services/drag-drop.service';
@@ -24,27 +24,14 @@ export const NGX_DRAGGABLE = new InjectionToken<DragRef>('ngx-draggable');
 
 @Directive({
   selector: '[NgxDraggable]',
-  providers: [
-    {
-      provide: NGX_DRAGGABLE,
-      useExisting: NgxDraggable,
-    },
-  ],
-  host: {
-    '[style.touch-action]': '"none"', // CRITICAL: Always disable touch actions
-  },
+  providers: [{ provide: NGX_DRAGGABLE, useExisting: NgxDraggable }],
+  host: { '[style.touch-action]': '"none"' },
 })
 export class NgxDraggable<T = any> implements OnInit, OnDestroy {
-  @Input() set boundary(value: HTMLElement | undefined) {
-    this._ref.boundary = value;
-  }
-  get boundary(): HTMLElement | undefined {
-    return this.boundary;
-  }
-
+  @Input() boundary?: HTMLElement;
   @Input() dragRootElement = '';
-
   @Input() disabled = false;
+
   @Output() dragStart = new EventEmitter<IPosition>();
   @Output() dragMove = new EventEmitter<IPosition>();
   @Output() dragEnd = new EventEmitter<IPosition>();
@@ -53,55 +40,52 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
     this._ref.data = val;
   }
 
-  private previousTransitionProprety?: string;
-  set dragging(val: boolean) {
-    this._ref.isDragging = val == true;
+  private _prevTransition?: string;
 
-    if (this._ref.isDragging) {
-      this.previousTransitionProprety = this._ref.el.style.transitionProperty;
+  set dragging(val: boolean) {
+    this._ref.isDragging = val === true;
+    if (val) {
+      this._prevTransition = this._ref.el.style.transitionProperty;
       this.renderer.setStyle(this._ref.el, 'transition-property', 'none', RendererStyleFlags2.Important);
       this.renderer.setStyle(this._ref.el, 'user-select', 'none');
       this.renderer.setStyle(this._ref.el, 'pointer-events', 'none');
       this.renderer.setStyle(this._ref.el, 'cursor', 'grabbing');
-      this.renderer.setStyle(this._ref.el, 'z-index', '999999');
+      // this.renderer.setStyle(this._ref.el, 'z-index', '999999');
       this.renderer.setStyle(this._ref.el, 'touch-action', 'none');
-      this.renderer.setStyle(this._ref.el, '-webkit-user-drag', 'none');
-      this.renderer.setStyle(this._ref.el, '-webkit-tap-highlight-color', 'transparent');
       this.renderer.setStyle(this._ref.el, 'will-change', 'transform');
-      this._ref.el.classList.add('dragging');
+      this._ref.el.classList.add('ngx-draggable--dragging');
     } else {
-      if (this.previousTransitionProprety)
-        this.renderer.setStyle(this._ref.el, 'transition-property', this.previousTransitionProprety);
-      else this.renderer.removeStyle(this._ref.el, 'transition-property');
+      if (this._prevTransition) {
+        this.renderer.setStyle(this._ref.el, 'transition-property', this._prevTransition);
+      } else {
+        this.renderer.removeStyle(this._ref.el, 'transition-property');
+      }
       this.renderer.removeStyle(this._ref.el, 'user-select');
       this.renderer.removeStyle(this._ref.el, 'pointer-events');
       this.renderer.removeStyle(this._ref.el, 'cursor');
-      this.renderer.removeStyle(this._ref.el, 'z-index');
-      this.renderer.removeStyle(this._ref.el, '-webkit-user-drag');
-      this.renderer.removeStyle(this._ref.el, '-webkit-tap-highlight-color');
+      // this.renderer.removeStyle(this._ref.el, 'z-index');
       this.renderer.removeStyle(this._ref.el, 'will-change');
-
-      this._ref.el.classList.remove('dragging');
+      this._ref.el.classList.remove('ngx-draggable--dragging');
     }
   }
   get dragging() {
     return this._ref.isDragging;
   }
 
-  private pointerDown = false;
-  private startSubscriptions: Subscription[] = [];
-  private subscriptions: Subscription[] = [];
+  private _pointerDown = false;
+  private _startSubs: Subscription[] = [];
+  private _moveSubs: Subscription[] = [];
 
   private readonly renderer = inject(Renderer2);
-  private _ref = new DragRef();
-  private readonly doc = inject(DOCUMENT);
+  private readonly _doc = inject(DOCUMENT);
+  private readonly _service = inject(DragDropService);
+  private readonly _dropList = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
+  private readonly _dropGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
 
-  private dropListContainer = inject(NGX_DROPLIST, { skipSelf: true, optional: true });
-  private dropListGroup = inject(NGX_DROPLIST_GROUP, { skipSelf: true, optional: true });
-  private dragDropService = inject(DragDropService);
+  readonly _ref = new DragRef();
 
   constructor(private elRef: ElementRef<HTMLElement>) {
-    this._ref.dropListGroup = this.dropListGroup;
+    this._ref.dropListGroup = this._dropGroup;
   }
 
   ngOnInit(): void {
@@ -109,69 +93,64 @@ export class NgxDraggable<T = any> implements OnInit, OnDestroy {
       ? (this.elRef.nativeElement.closest(this.dragRootElement) ?? this.elRef.nativeElement)
       : this.elRef.nativeElement;
 
-    this.initDragHandler();
-    // this.isFullRow = isFullRowElement(this._ref.el);
+    if (this.boundary) this._ref.boundary = this.boundary;
+
     this._ref.init();
-    this.dragDropService.registerDragItem(this._ref);
-    this._ref.withDropList(this.dropListContainer?._ref ?? null);
-  }
+    this._service.registerDragItem(this._ref);
+    this._ref.withDropList(this._dropList?._ref ?? null);
 
-  ngOnDestroy() {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.startSubscriptions.forEach(sub => sub.unsubscribe());
-    // this.autoScroll.stop();
-    this.dragDropService.removeDragItem(this._ref);
-    this._ref.dropList?.removeItem?.(this._ref);
-  }
-
-  initDragHandler() {
-    // if passive = true => browser won't allow preventDefault
-    this.startSubscriptions = [
-      fromEvent<PointerEvent>(this._ref.el, 'pointerdown', { passive: false }).subscribe(ev => this.onPointerDown(ev)),
+    this._startSubs = [
+      fromEvent<PointerEvent>(this._ref.el, 'pointerdown', { passive: false }).subscribe(ev => this._onPointerDown(ev)),
     ];
   }
 
-  onEndDrag(_ev: PointerEvent) {
-    if (this.dragging) {
-      //  this.dragService.stopDrag(this);
-      this.dragEnd.emit({ x: this._ref.x, y: this._ref.y });
-    }
-    this.dragging = false;
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.pointerDown = false;
-    this._ref.endDrag();
+  ngOnDestroy() {
+    [...this._startSubs, ...this._moveSubs].forEach(s => s.unsubscribe());
+    this._service.removeDragItem(this._ref);
+    this._ref.dropList?.removeItem(this._ref);
   }
 
-  onPointerDown(ev: PointerEvent) {
+  private _onPointerDown(ev: PointerEvent) {
     if (ev.button !== 0 || this.disabled) return;
     // if (this.interaction.isResizing()) return;
     ev.preventDefault();
     // stopPropagation required for nested tree elements
     ev.stopPropagation();
 
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.subscriptions = [
-      fromEvent<PointerEvent>(this.doc, 'pointermove', { passive: false }).subscribe(ev => this.onPointerMove(ev)),
-      fromEvent<PointerEvent>(window, 'pointerup', { passive: false }).subscribe(ev => this.onEndDrag(ev)),
-      fromEvent<PointerEvent>(window, 'pointercancel', { passive: false }).subscribe(ev => this.onEndDrag(ev)),
+    this._moveSubs.forEach(s => s.unsubscribe());
+    this._moveSubs = [
+      fromEvent<PointerEvent>(this._doc, 'pointermove', { passive: false }).subscribe(ev => this._onPointerMove(ev)),
+      fromEvent<PointerEvent>(window, 'pointerup', { passive: false }).subscribe(ev => this._onPointerUp(ev)),
+      fromEvent<PointerEvent>(window, 'pointercancel', { passive: false }).subscribe(ev => this._onPointerUp(ev)),
     ];
 
-    this.pointerDown = true;
-    const p = getPointerOnViewPort(ev);
-    this._ref.pointerDown(p);
+    this._pointerDown = true;
+    this._ref.pointerDown(getPointerOnViewPort(ev));
   }
 
-  onPointerMove(ev: PointerEvent) {
-    if (this.pointerDown && this._ref.isDragging == false) {
-      const p = getPointerOnViewPort(ev);
+  private _onPointerMove(ev: PointerEvent) {
+    const p = getPointerOnViewPort(ev);
+
+    if (this._pointerDown && !this.dragging) {
       this._ref.startDrag(p);
       this.dragStart.emit(p);
       this.dragging = true;
     }
 
-    let p = getPointerOnViewPort(ev);
-    this._ref.dragMove(p);
-    // this.dragService.getPointerElement(p);
-    this.dragMove.emit({ x: this._ref.x, y: this._ref.y });
+    if (this.dragging) {
+      this._ref.dragMove(p);
+      this.dragMove.emit({ x: this._ref.x, y: this._ref.y });
+    }
+  }
+
+  private _onPointerUp(_ev: PointerEvent) {
+    if (this.dragging) {
+      this.dragEnd.emit({ x: this._ref.x, y: this._ref.y });
+    }
+    this.dragging = false;
+    this._moveSubs.forEach(s => s.unsubscribe());
+    this._moveSubs = [];
+    this._pointerDown = false;
+    this._ref.endDrag();
   }
 }

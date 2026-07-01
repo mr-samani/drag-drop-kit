@@ -8,24 +8,28 @@ export class PlaceHolderRef {
   el?: HTMLElement;
 
   getElement(dragItem: DragRef): HTMLElement {
-    if (this.el) return this.el;
     if (this.tpl) {
       const ctx = { width: dragItem.domRect.width, height: dragItem.domRect.height };
-      const placeholderViewRef = this.tpl.createEmbeddedView(ctx);
-      placeholderViewRef.detectChanges();
-      // this.appRef.attachView(placeholderViewRef);
-      this.el = placeholderViewRef.rootNodes[0] as HTMLElement;
-    } else {
-      this.el = dragItem.el.cloneNode(false) as HTMLElement;
-      this.el.classList.add('ngx-drag-placeholder');
-      this.el.style.background = '#3fccff69';
-      this.el.style.border = '1px dashed #000';
-      this.el.style.zIndex = '9999 !important';
-      this.el.style.pointerEvents = 'none !important';
-      if (this.isFlexibleAndWrap(dragItem.el)) {
-      }
+      const view = this.tpl.createEmbeddedView(ctx);
+      view.detectChanges();
+      this.el = view.rootNodes[0] as HTMLElement;
+    } else if (!this.el) {
+      const ph = dragItem.el.cloneNode(false) as HTMLElement;
+      ph.removeAttribute('id');
+      ph.classList.add('ngx-drag-placeholder');
+      ph.style.background = '#3fccff69';
+      ph.style.border = '1px dashed #000';
+      ph.style.visibility = 'hidden';
+      ph.style.pointerEvents = 'none';
+      ph.style.transition = 'none';
+      ph.style.opacity = '0';
+      ph.style.transform = '';
+      ph.style.boxSizing = 'border-box';
+      ph.style.width = dragItem.domRect.width + 'px';
+      ph.style.height = dragItem.domRect.height + 'px';
+      this.el = ph;
     }
-    return this.el;
+    return this.el!;
   }
 
   remove() {
@@ -33,8 +37,8 @@ export class PlaceHolderRef {
     this.el = undefined;
   }
 
-  private isFlexibleAndWrap(el: HTMLElement) {
-    const styles = window.getComputedStyle(el);
-    return styles.display == 'flex' && styles.flexWrap == 'wrap';
-  }
+  // private isFlexibleAndWrap(el: HTMLElement) {
+  //   const styles = window.getComputedStyle(el);
+  //   return styles.display == 'flex' && styles.flexWrap == 'wrap';
+  // }
 }

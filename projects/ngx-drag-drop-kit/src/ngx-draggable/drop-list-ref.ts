@@ -1,9 +1,11 @@
-import { DOCUMENT, EventEmitter, inject } from '@angular/core';
+import { EventEmitter, inject } from '@angular/core';
 import { DragRef } from './drag-ref';
 import { DropListGroupRef } from './drop-list-group-ref';
 import { PlaceHolderRef } from './placeholder-ref';
 import { NGX_PLACEHOLDER } from './directives/ngx-place-holder.directive';
 import { IDropEvent } from './contracts/IDropEvent';
+import { IPosition } from './contracts/IPosition';
+import { PositionalSortStrategy } from './sorting/positional-sort-strategy';
 
 export class DropListRef<T = any> {
   data?: T;
@@ -13,15 +15,20 @@ export class DropListRef<T = any> {
   dropListGroup?: DropListGroupRef | null;
 
   _draggables = new Set<DragRef>();
-  _currentIndex = -1;
   domRect!: DOMRect;
 
   _placeHolderRef = inject(NGX_PLACEHOLDER, { optional: true });
-  doc = inject(DOCUMENT);
   onDrop = new EventEmitter<IDropEvent<T>>();
+
+  private _isDragging = false;
+  private _sortStrategy = new PositionalSortStrategy();
+
+  // ─── Registration ────────────────────────────────────────────────────────────
+
   updateDomRect() {
     this.domRect = this.el.getBoundingClientRect();
   }
+
   addItem(item: DragRef) {
     this._draggables.add(item);
   }
@@ -30,38 +37,83 @@ export class DropListRef<T = any> {
     this._draggables.delete(item);
   }
 
-  createPlaceHolder(currentDragItem: DragRef, dragOverItem?: DragRef, isAfter = false) {
-    if (!this._placeHolderRef) {
-      this._placeHolderRef = new PlaceHolderRef();
+  // ─── Session ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Start a drag session / enter this list from another.
+   */
+  enter(currentDragItem: DragRef, pointerX = 0, pointerY = 0): void {
+    if (!this._isDragging) {
+      // Detect RTL from container or document
+      const dir = getComputedStyle(this.el).direction;
+      this._sortStrategy.withRtl(dir === 'rtl');
+      this._sortStrategy.withElementContainer(this.el);
+
+      // Snapshot all non-dragging items
+      const siblings = Array.from(this._draggables).filter(d => d !== currentDragItem);
+      this._sortStrategy.start(siblings);
+
+      this._isDragging = true;
+      this.el.classList.add('ngx-drop-list-dragging');
     }
-    const plc = this._placeHolderRef.getElement(currentDragItem);
-    if (dragOverItem) {
-      dragOverItem.el.insertAdjacentElement(isAfter ? 'afterend' : 'beforebegin', plc);
-    } else {
-      this.el.appendChild(plc);
+
+    // Place placeholder in the container at the right position
+    try {
+      this._sortStrategy.enter(currentDragItem, pointerX, pointerY);
+    } catch {
+      // placeholder not ready yet on first enter — that's ok
     }
   }
 
-  enter(currentDragItem: DragRef, dragOverItem?: DragRef) {
-    if (!this._placeHolderRef || !this._placeHolderRef.el) {
-      this.createPlaceHolder(currentDragItem, dragOverItem);
-    }
-    this.el.style.outline = '1px red solid';
-    this._placeHolderRef!.el!.style.display = 'block';
-    this._currentIndex = -1;
-    let i = 0;
-    for (let item of this._draggables.values()) {
-      if (item.el == currentDragItem.el) {
-        this._currentIndex = i;
-        break;
-      }
-      i++;
+  /**
+   * Item exited this list.
+   */
+  exit(currentDragItem: DragRef): void {
+    if (!this._isDragging) return;
+
+    this._isDragging = false;
+    this.el.classList.remove('ngx-drop-list-dragging');
+    this._sortStrategy.reset();
+
+    // Remove placeholder from DOM
+    try {
+      const ph = currentDragItem.getPlaceholderElement();
+      ph?.remove();
+    } catch {
+      /* placeholder might already be gone */
     }
   }
 
-  exit() {
-    this.el.style.outline = 'none';
-    if (!this._placeHolderRef || !this._placeHolderRef.el) return;
-    this._placeHolderRef.el.style.display = 'none';
+  /**
+   * Sort on pointer-move. Returns new placeholder index or null.
+   */
+  sortItem(dragItem: DragRef, position: IPosition, delta: IPosition): number | null {
+    if (!this._isDragging || this.disableSort) return null;
+
+    const result = this._sortStrategy.sort(dragItem, position.x, position.y, delta);
+    if (result !== null) {
+      return result.currentIndex;
+    }
+    return null;
+  }
+
+  /** Returns current visual index of the placeholder. */
+  getItemIndex(item: DragRef): number {
+    return this._sortStrategy.getItemIndex(item);
+  }
+
+  /**
+   * Called from DragRef.endDrag() — cleans up transforms on all lists.
+   */
+  resetSortTransforms(): void {
+    if (!this._isDragging) return;
+    this._isDragging = false;
+    this.el.classList.remove('ngx-drop-list-dragging');
+    this._sortStrategy.reset();
+  }
+
+  /** Get the final drop index from the strategy */
+  getFinalIndex(): number {
+    return this._sortStrategy.getCurrentIndex();
   }
 }

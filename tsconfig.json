@@ -24,8 +24,6 @@
     "noImplicitThis": true,
 
     "exactOptionalPropertyTypes": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": false,
     "useUnknownInCatchVariables": false,
     "strictBuiltinIteratorReturn": true,
     "noEmitOnError": true

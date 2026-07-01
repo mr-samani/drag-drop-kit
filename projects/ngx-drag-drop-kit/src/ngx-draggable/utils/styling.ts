@@ -36,3 +36,11 @@ export function copyEssentialStyles(source: HTMLElement, target: HTMLElement) {
     }
   });
 }
+
+/**
+ * Combines a transform string with an optional other transform
+ * that exited before the base transform was applied.
+ */
+export function combineTransforms(transform: string, initialTransform?: string): string {
+  return initialTransform && initialTransform != 'none' ? transform + ' ' + initialTransform : transform;
+}
